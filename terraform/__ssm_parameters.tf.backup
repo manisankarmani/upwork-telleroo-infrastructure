@@ -1,0 +1,32 @@
+# All values will be used as placeholder for security  # WARNING
+
+resource "aws_ssm_parameter" "DB_HOST" {
+  name  = "/${var.name}/${var.environment}/DB_HOST"
+  type  = "SecureString"
+  #value = aws_db_instance.master_db.address
+  value = "Blah"
+}
+
+resource "aws_ssm_parameter" "DB_PORT" {
+  name  = "/${var.name}/${var.environment}/DB_PORT"
+  type  = "SecureString"
+  value = "3306"
+}
+# Application Specific SSM Parameters
+resource "aws_ssm_parameter" "DB_DATABASE" {
+  name  = "/${var.name}/${var.environment}/DB_DATABASE"
+  type  = "SecureString"
+  value = "${var.environment}_${var.database_schema}"
+}
+resource "aws_ssm_parameter" "DB_USERNAME" {
+  name  = "/${var.name}/${var.environment}/DB_USERNAME"
+  type  = "SecureString"
+  value = var.db_master_username
+}
+resource "aws_ssm_parameter" "DB_PASSWORD" {
+  name  = "/${var.name}/${var.environment}/DB_PASSWORD"
+  type  = "SecureString"
+  # value = random_password.master.result 
+  value = "Blah"
+}
+

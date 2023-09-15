@@ -1,0 +1,203 @@
+# Security Groups 
+
+resource "aws_security_group" "allow_internet_to_alb" {
+  name        = format("%s-allow-traffic-to-alb", var.name)
+  description = "Allow HTTP inbound traffic for ALB"
+  vpc_id      = aws_vpc.telleroo_vpc.id
+
+  tags = {
+    Name = format("%s-allow-internet-to-alb", var.name)
+  }
+}
+
+resource "aws_security_group_rule" "allow_intern_to_alb_ingress_80" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.allow_internet_to_alb.id
+}
+
+resource "aws_security_group_rule" "allow_intern_to_alb_ingress_443" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.allow_internet_to_alb.id
+}
+
+# resource "aws_security_group_rule" "allow_intern_to_alb_ingress_backend_application" {
+#   type              = "ingress"
+#   from_port         = var.telleroo_application_ecs_backend_container_port
+#   to_port           = var.telleroo_application_ecs_backend_container_port
+#   protocol          = "tcp"
+#   cidr_blocks       = ["0.0.0.0/0"]
+#   security_group_id = aws_security_group.allow_internet_to_alb.id
+# }
+
+
+
+resource "aws_security_group_rule" "allow_intern_to_alb_egress_443" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.allow_internet_to_alb.id
+}
+
+
+resource "aws_security_group" "allow_alb_to_ecs" {
+  name        = format("%s-allow-http", var.name)
+  description = "Allow Traffic From ALB to ECS"
+  vpc_id      = aws_vpc.telleroo_vpc.id
+
+  tags = {
+    Name = format("%s-allow-traffic-from-alb-to-ecs", var.name)
+  }
+}
+
+resource "aws_security_group_rule" "allow_alb_to_ecs_ingress_80" {
+  type                     = "ingress"
+  from_port                = 80
+  to_port                  = 80
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.allow_internet_to_alb.id
+  security_group_id        = aws_security_group.allow_alb_to_ecs.id
+}
+
+resource "aws_security_group_rule" "allow_alb_to_ecs_ingress_443" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.allow_internet_to_alb.id
+  security_group_id        = aws_security_group.allow_alb_to_ecs.id
+}
+
+resource "aws_security_group_rule" "allow_intern_to_alb_ingress_backend_8000" {
+  type              = "ingress"
+  from_port         = 8000
+  to_port           = 8000
+  protocol          = "tcp"
+  source_security_group_id = aws_security_group.allow_internet_to_alb.id
+  security_group_id        = aws_security_group.allow_alb_to_ecs.id
+  }
+
+resource "aws_security_group_rule" "allow_intern_to_alb_ingress_backend_8080" {
+  type              = "ingress"
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+  source_security_group_id = aws_security_group.allow_internet_to_alb.id
+  security_group_id        = aws_security_group.allow_alb_to_ecs.id
+}
+
+resource "aws_security_group_rule" "allow_alb_to_ecs_ingress_backend_liveaction" {
+  type                     = "ingress"
+  from_port                = var.telleroo_liveaction_ecs_backend_container_port
+  to_port                  = var.telleroo_liveaction_ecs_backend_container_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.allow_internet_to_alb.id
+  security_group_id        = aws_security_group.allow_alb_to_ecs.id
+}
+
+
+resource "aws_security_group_rule" "allow_alb_to_ecs_egress_443" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.allow_alb_to_ecs.id
+}
+
+
+resource "aws_security_group" "allow_rds_app" {
+  name        = format("%s-allow-rds", var.name)
+  description = "Allow RDS inbound traffic from application"
+  vpc_id      = aws_vpc.telleroo_vpc.id
+
+  tags = {
+    Name = format("%s-allow-rds-app", var.name)
+  }
+}
+resource "aws_security_group_rule" "allow_rds_app_ingress_from_ecs" {
+  type                     = "ingress"
+  from_port                = var.db_port
+  to_port                  = var.db_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.allow_alb_to_ecs.id
+  security_group_id        = aws_security_group.allow_rds_app.id
+}
+# resource "aws_security_group_rule" "allow_rds_app_ingress_from_bastion" {
+#   type                     = "ingress"
+#   from_port                = var.db_port
+#   to_port                  = var.db_port
+#   protocol                 = "tcp"
+#   source_security_group_id = var.bastion_security_group
+#   security_group_id        = aws_security_group.allow_rds_app.id
+# }
+resource "aws_security_group_rule" "allow_rds_app_egress" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.allow_rds_app.id
+}
+
+
+resource "aws_security_group" "allow_mount_target" {
+  name        = format("%s-allow-efs", var.application)
+  description = "Allow Connection Between ECS EFS"
+  vpc_id      = aws_vpc.telleroo_vpc.id
+
+  ingress {
+    description     = "Allow Connection Between ECS EFS"
+    from_port       = "2049"
+    to_port         = "2049"
+    protocol        = "tcp"
+    security_groups = [aws_security_group.allow_alb_to_ecs.id]
+    self            = true
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = format("%s-allow-efs", var.application)
+  }
+}
+
+resource "aws_security_group" "allow_mount_target_secure" {
+  name        = format("%s-allow-efs-secure", var.application)
+  description = "Allow Connection Between ECS EFS Secure"
+  vpc_id      = aws_vpc.telleroo_vpc.id
+
+  ingress {
+    description     = "Allow Connection Between ECS EFS Secure"
+    from_port       = "2999"
+    to_port         = "2999"
+    protocol        = "tcp"
+    security_groups = [aws_security_group.allow_alb_to_ecs.id]
+    self            = true
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = format("%s-allow-efs-secure", var.application)
+  }
+}

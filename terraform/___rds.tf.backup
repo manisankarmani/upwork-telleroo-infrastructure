@@ -1,0 +1,42 @@
+resource "aws_db_subnet_group" "master_db_subnet_group" {
+
+  name        = "${var.name}${var.filler}-subnet-group"
+  description = "Master DB Subnet Group"
+  subnet_ids  = [aws_subnet.telleroo_subnet_private_rds_a.id, aws_subnet.telleroo_subnet_private_rds_b.id]
+}
+
+resource "random_password" "master" {
+  length           = 16
+  special          = true
+  override_special = "_!%^"
+}
+
+resource "aws_secretsmanager_secret" "password" {
+
+  name = "/${var.name}/${var.environment}/db_password"
+}
+
+resource "aws_secretsmanager_secret_version" "password" {
+
+  secret_id     = aws_secretsmanager_secret.password.id
+  secret_string = random_password.master.result
+}
+
+
+resource "aws_db_instance" "master_db" {
+
+  identifier                = format("%s-%s",var.name,var.environment)
+  allocated_storage         = var.db_storage
+  engine                    = var.db_engine
+  engine_version            = var.db_engine_version
+  instance_class            = var.db_instance_class
+  name                      = var.database_schema
+  skip_final_snapshot       = true
+  final_snapshot_identifier = "${var.name}FinalSnapshot"
+  # db_subnet_group_name      = aws_db_subnet_group.master_db_subnet_group[0].name
+  db_subnet_group_name      = aws_db_subnet_group.master_db_subnet_group.name
+  vpc_security_group_ids    = [aws_security_group.allow_rds_app.id]
+  username                  = var.db_master_username
+  password                  = random_password.master.result
+}
+
